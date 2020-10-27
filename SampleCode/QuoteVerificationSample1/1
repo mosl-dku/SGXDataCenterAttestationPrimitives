@@ -340,9 +340,12 @@ int SGX_CDECL main(int argc, char *argv[])
     vector<uint8_t> quote;
 
     struct sockaddr_in servaddr;
-    struct sockaddr_in cliaddr;
+    struct sockaddr_in cliaddr, client_addr;
     int listen_sock, accp_sock, nbyte, nbuf;
-
+    int client_sockfd;
+    int result;
+    int state;
+    char msg[10];
     socklen_t addrlen;
 
     char buf[MAXLINE+1];
@@ -350,6 +353,8 @@ int SGX_CDECL main(int argc, char *argv[])
     char filename[20];
     int filesize=0;
     int total = 0, sread, fp;
+    memset(msg, 0x00, 10);
+    state = 0;
     
     listen_sock = socket(PF_INET, SOCK_STREAM, 0);
     if(listen_sock < 0){
@@ -460,10 +465,27 @@ int SGX_CDECL main(int argc, char *argv[])
 
     // Unrusted quote verification, ignore error checking
     printf("\nUntrusted quote verification:\n");
-    ecdsa_quote_verification(quote, false);
-
+    result = ecdsa_quote_verification(quote, false);
     printf("\n");
+        
+    client_addr.sin_family = AF_INET;
+    client_addr.sin_family = AF_INET;
+    client_addr.sin_addr.s_addr = inet_addr(cli_ip);
+    client_addr.sin_port = htons(9999);
 
+    client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (connect (client_sockfd, (struct sockaddr *)&client_addr, client_len) < 0){
+	printf("ERR : connect error\n");
+	return -1;
+    }
+    if(verification_result){ //Success
+	sprintf( msg, result, "1");
+    }else{
+        sprintf( msg, result, "1");	
+    }
+    send(client_sockfd, msg, strlen(msg), 0);
+    close(client_sockfd);
     
+    printf("send verf result finish\n");
     return 0;
 }

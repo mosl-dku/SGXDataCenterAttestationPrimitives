@@ -291,7 +291,7 @@ int ecdsa_quote_verification(vector<uint8_t> quote, bool use_qve)
         {
         case SGX_QL_QV_RESULT_OK:
             printf("\tInfo: App: Verification completed successfully.\n");
-            ret = 0;
+            ret = 1;
             break;
         case SGX_QL_QV_RESULT_CONFIG_NEEDED:
         case SGX_QL_QV_RESULT_OUT_OF_DATE:
@@ -340,16 +340,21 @@ int SGX_CDECL main(int argc, char *argv[])
     vector<uint8_t> quote;
 
     struct sockaddr_in servaddr;
-    struct sockaddr_in cliaddr;
+    struct sockaddr_in cliaddr, client_addr;
     int listen_sock, accp_sock, nbyte, nbuf;
-
-    socklen_t addrlen;
+    int client_sockfd;
+    int result;
+    int state;
+    char msg[10];
+    socklen_t addrlen, client_len;
 
     char buf[MAXLINE+1];
     char cli_ip[20];
     char filename[20];
     int filesize=0;
     int total = 0, sread, fp;
+    memset(msg, 0x00, 10);
+    state = 0;
     
     listen_sock = socket(PF_INET, SOCK_STREAM, 0);
     if(listen_sock < 0){
@@ -392,7 +397,9 @@ int SGX_CDECL main(int argc, char *argv[])
     
     printf("Test Version - DCAP QUOTE Remote Verification \n"); // wait until QUOTE RECEIVED from Source Host
 
-   // while(1){
+	if(access("/home/mobileosdcaps/DCAP/SGXDataCenterAttestationPrimitives/SampleCode/QuoteVerificationSample1/quote.dat", 0)==0){
+		system("rm /home/mobileosdcaps/DCAP/SGXDataCenterAttestationPrimitives/SampleCode/QuoteVerificationSample1/quote.dat");
+	}
         printf("Waiting quote.dat input...\n");
         accp_sock = accept(listen_sock, (struct sockaddr*)&cliaddr, &addrlen);
 
@@ -432,7 +439,7 @@ int SGX_CDECL main(int argc, char *argv[])
 
         close(fp);
         close(accp_sock);
-   // }
+  
 
     close(listen_sock);
     //read quote from file
@@ -454,16 +461,34 @@ int SGX_CDECL main(int argc, char *argv[])
 
     // Trusted quote verification, ignore error checking
     printf("\nTrusted quote verification:\n");
-    ecdsa_quote_verification(quote, true);
+    result = ecdsa_quote_verification(quote, true);
 
     printf("\n===========================================\n");
 
     // Unrusted quote verification, ignore error checking
     printf("\nUntrusted quote verification:\n");
     ecdsa_quote_verification(quote, false);
-
     printf("\n");
+        
+    client_addr.sin_family = AF_INET;
+    client_addr.sin_family = AF_INET;
+    client_addr.sin_addr.s_addr = inet_addr(cli_ip);
+    client_addr.sin_port = htons(9999);
+    client_len = sizeof(client_addr);
 
+    client_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (connect (client_sockfd, (struct sockaddr *)&client_addr, client_len) < 0){
+	printf("ERR : connect error\n");
+	return -1;
+    }
+    if(result){ //Success
+	sprintf( msg, "1");
+    }else{
+        sprintf( msg, "0");	
+    }
+    send(client_sockfd, msg, strlen(msg), 0);
+    close(client_sockfd);
     
+    printf("send verf result finish\n");
     return 0;
 }

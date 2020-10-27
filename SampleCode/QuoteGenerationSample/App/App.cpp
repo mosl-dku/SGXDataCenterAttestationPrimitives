@@ -54,6 +54,19 @@
 
 #include "Enclave_u.h"
 
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define MAXLINE 127
+//127.0.0.1
+//5500
+
 #define SGX_AESM_ADDR "SGX_AESM_ADDR"
 #if defined(_MSC_VER)
 #define ENCLAVE_PATH _T("enclave.signed.dll")
@@ -97,10 +110,18 @@ CLEANUP:
         sgx_destroy_enclave(eid);
         return ret;
 }
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
-    (void)(argc);
-    (void)(argv);
+    //(void)(argc);
+    //(void)(argv);
+
+    struct sockaddr_in servaddr; // QUOTE
+    int s, nbyte;
+    char buf[MAXLINE + 1];
+    char filename[20];
+    int filesize, fp, filenamesize;
+    int sread, total = 0;
+    //
 
     int ret = 0;
     quote3_error_t qe3_ret = SGX_QL_SUCCESS;
@@ -243,5 +264,56 @@ CLEANUP:
     if (NULL != p_quote_buffer) {
         free(p_quote_buffer);
     }
+
+    if(argc != 3){
+        printf("usage: %s ip_address port\n", argv[0]);
+        exit(0);
+    }
+
+    s = socket(PF_INET, SOCK_STREAM, 0);
+    if(s < 0){
+        perror("socket fail");
+        exit(0);
+    }
+
+    bzero((char*)&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
+    servaddr.sin_port = htons(atoi(argv[2]));
+
+    int connect_res = connect(s, (struct sockaddr *)&servaddr, sizeof(servaddr));
+
+    if(connect_res < 0){
+        perror("connect fail\n");
+        exit(0);
+    }
+
+    strcpy(filename, "quote.dat");
+    printf("Send Quote.dat \n");
+    
+    fp = open(filename, O_RDONLY);
+    if(fp < 0){
+        printf("open fail \n");
+        exit(0);
+    }
+
+    send(s, filename, sizeof(filename), 0);
+
+    filesize = lseek(fp, 0, SEEK_END);
+    send(s, &filesize, sizeof(filesize), 0);
+    lseek(fp, 0, SEEK_SET);
+
+    while(total != filesize){
+        sread = read(fp, buf, 100);
+        total += sread;
+        buf[sread] = 0;
+        send(s, buf, sread, 0);
+        usleep(10000);
+    }
+
+    printf("quote send complete\n");
+    close(fp);
+    close(s);
+
     return ret;
 }
