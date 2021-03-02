@@ -71,7 +71,8 @@
 #if defined(_MSC_VER)
 #define ENCLAVE_PATH _T("enclave.signed.dll")
 #else
-#define ENCLAVE_PATH "enclave.signed.so"
+//#define ENCLAVE_PATH "enclave.signed.so"
+#define ENCLAVE_PATH "/home/mobileosdcaps/SGX/mosl/SGXDataCenterAttestationPrimitives/SampleCode/QuoteGenerationSample/enclave.signed.so"
 #endif
 
 bool create_app_enclave_report(sgx_target_info_t qe_target_info, sgx_report_t *app_report)
@@ -258,6 +259,7 @@ int main(int argc, char** argv)
             goto CLEANUP;
         }
         printf("succeed!\n");
+	ret = 0;
     }
 
 CLEANUP:
@@ -281,11 +283,18 @@ CLEANUP:
     inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
     servaddr.sin_port = htons(atoi(argv[2]));
 
+    if(ret == -1){
+	printf("Error in making Quote\n");
+	return -1;
+    }
+
+
     int connect_res = connect(s, (struct sockaddr *)&servaddr, sizeof(servaddr));
 
     if(connect_res < 0){
         perror("connect fail\n");
-        exit(0);
+        //exit(0);
+	return -1;
     }
 
     strcpy(filename, "quote.dat");
@@ -294,7 +303,8 @@ CLEANUP:
     fp = open(filename, O_RDONLY);
     if(fp < 0){
         printf("open fail \n");
-        exit(0);
+        //exit(0);
+	return -1;
     }
 
     send(s, filename, sizeof(filename), 0);

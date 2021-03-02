@@ -36,7 +36,8 @@ const {platformsController,
        tcbinfoController,
        identityController,
        rootcacrlController,
-       refreshController} = require('../controllers');
+       refreshController,
+       verificationController} = require('../controllers');
 
 // express routes for our API
 const router = express.Router();
@@ -68,5 +69,8 @@ router.route('/rootcacrl')
 
 router.route('/refresh')
     .get(refreshController.refreshCache);
+
+router.route('/verification')
+    .get(verificationController.Verification);
 
 module.exports = router;

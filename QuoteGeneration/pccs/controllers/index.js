@@ -37,6 +37,7 @@ const tcbinfoController = require('./tcbinfoController.js');
 const identityController = require('./identityController.js');
 const rootcacrlController = require('./rootcacrlController.js');
 const refreshController = require('./refreshController.js');
+const verificationController = require('./verificationController.js');
 
 module.exports = { 
     platformsController : platformsController,
@@ -46,6 +47,7 @@ module.exports = {
     tcbinfoController : tcbinfoController,
     identityController : identityController,
     rootcacrlController : rootcacrlController,
-    refreshController : refreshController
+    refreshController : refreshController,
+    verificationController : verificationController
 };
 

@@ -462,8 +462,36 @@ int SGX_CDECL main(int argc, char *argv[])
     printf("\nUntrusted quote verification:\n");
     ecdsa_quote_verification(quote, false);
 
-    printf("\n");
+    printf("Send Migration Result to TTP Server.\n");
 
+//-----------------------------------Send Migration result to TTP Server-----------------------------//
+    int ttp_sock;
+
+    //sleep(5);
+
+    struct sockaddr_in ttp_addr;
+    socklen_t ttp_addr_size;
     
+    char ttp_address[] = "127.0.0.1";
+    char message[] = "Attestation result";
+
+    ttp_sock = socket(PF_INET, SOCK_STREAM, 0);
+    if(ttp_sock == -1){
+        printf("socket() error\n");
+        return 0;	
+	}
+    
+    memset(&ttp_addr, 0, sizeof(ttp_addr));
+    ttp_addr.sin_family = AF_INET;
+    ttp_addr.sin_addr.s_addr = inet_addr(ttp_address);
+    ttp_addr.sin_port = htons(4500);
+
+    if(connect(ttp_sock, (struct sockaddr*)&ttp_addr, sizeof(ttp_addr)) == -1){
+	printf("connection error\n");
+	return 0;
+    }
+
+    send(ttp_sock, message, sizeof(message), 0);
+
     return 0;
 }

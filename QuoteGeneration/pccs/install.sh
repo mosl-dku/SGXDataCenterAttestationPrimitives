@@ -4,6 +4,7 @@ arg1=$1
 argnum=$#
 ## Set mydir to the directory containing the script
 mydir="${0%/*}"
+##mydir="/home/mobileosdcaps/SGX/mosl/SGXDataCenterAttestationPrimitives/QuoteGeneration/pccs/*"
 configFile="$mydir"/config/production-0.json
 YELLOW='\033[1;33m'
 NC='\033[0m'
@@ -21,9 +22,12 @@ function checkNodeJs() {
 }
 
 function postConfiguration() {
+    echo '########################################'
+    pwd
+    echo '########################################'
     pm2 update
     pm2 start pccs_server.config.js 
-    pm2 save
+#    pm2 save
 
     if [[ "$argnum" == 0 || "$arg1" != "postinst" ]]; then
         pm2cfg=`pm2 startup systemd | grep 'sudo'` 
@@ -51,6 +55,11 @@ then
 fi
 
 cd `dirname $0`
+echo '############################'
+pwd
+echo $0
+echo '############################'
+
 npm config set engine-strict true
 npm install
 [ $? -eq 0 ] || exit $?;

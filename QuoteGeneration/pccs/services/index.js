@@ -37,6 +37,7 @@ const identityService = require('./identityService.js');
 const rootcacrlService = require('./rootcacrlService.js');
 const refreshService = require('./refreshService.js');
 const platformsService = require('./platformsService.js');
+const verificationService = require('./verificationService.js');
 
 module.exports = { 
     platformsRegService : platformsRegService,
@@ -47,6 +48,7 @@ module.exports = {
     identityService: identityService,
     rootcacrlService: rootcacrlService,
     refreshService: refreshService,
-    platformsService: platformsService
+    platformsService: platformsService,
+    verificationService: verificationService
 };
 
