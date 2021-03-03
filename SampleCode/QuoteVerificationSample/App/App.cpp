@@ -55,7 +55,7 @@
 
 #ifndef _MSC_VER
 
-#define SAMPLE_ISV_ENCLAVE  "enclave.signed.so"
+#define SAMPLE_ISV_ENCLAVE  "/home/mobileosdcaps/SGX/mosl/SGXDataCenterAttestationPrimitives/SampleCode/QuoteVerificationSample/enclave.signed.so"
 //#define DEFAULT_QUOTE   "../QuoteGenerationSample/quote.dat"
 #define DEFAULT_QUOTE   "quote.dat"
 
