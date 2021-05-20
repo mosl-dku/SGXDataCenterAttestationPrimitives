@@ -71,7 +71,7 @@ endif
 App_Cpp_Files := App/App.cpp
 App_Include_Paths := -IApp -I$(SGX_SDK)/include
 
-App_C_Flags := -fPIC -Wno-attributes $(App_Include_Paths)
+App_C_Flags := -fPIC -Wno-attribute $(App_Include_Paths)
 
 # Three configuration modes - Debug, prerelease, release
 #   Debug - Macro DEBUG enabled.
@@ -86,7 +86,7 @@ else
 endif
 
 App_Cpp_Flags := $(App_C_Flags)
-App_Link_Flags := -L$(SGX_LIBRARY_PATH) -lsgx_dcap_quoteverify -l$(Urts_Library_Name) -lpthread -ldl
+App_Link_Flags := -L$(SGX_LIBRARY_PATH) -lsgx_dcap_quoteverify -l$(Urts_Library_Name) -lpthread -ldl -lcurl
 
 ifneq ($(SGX_MODE), HW)
 	App_Link_Flags += -lsgx_uae_service_sim

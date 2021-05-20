@@ -49,6 +49,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <curl/curl.h>
 
 #define PORT 5500
 #define MAXLINE 127
@@ -70,6 +71,14 @@
 
 using namespace std;
 
+string response_string;
+string header_string;
+
+size_t writeFunction(void *ptr, size_t size, size_t nmemb, string* data)
+{
+    data->append((char*) ptr, size * nmemb);
+    return size * nmemb;
+}
 
 vector<uint8_t> readBinaryContent(const string& filePath)
 {
@@ -350,7 +359,36 @@ int SGX_CDECL main(int argc, char *argv[])
     char filename[20];
     int filesize=0;
     int total = 0, sread, fp;
-    
+
+    int att_ret;
+
+    //verify quote directly
+    if(!strcmp(argv[1], "-verify")){
+	
+	//FILE *fp = fopen("quote.dat", "r");
+
+        //fseek(fp, 0, SEEK_END);
+        //size = ftell(fp);	
+	
+	quote = readBinaryContent("quote.dat");
+    	if (quote.empty()) {
+            usage();
+            return -1;
+    	}
+
+
+	printf("\nTrusted quote verification:\n");
+	att_ret = ecdsa_quote_verification(quote, true);
+
+    	printf("\n===========================================\n");
+
+    	// Unrusted quote verification, ignore error checking
+    	printf("\nUntrusted quote verification:\n");
+    	att_ret = ecdsa_quote_verification(quote, false);
+
+	return 0;	    
+    }
+
     listen_sock = socket(PF_INET, SOCK_STREAM, 0);
     if(listen_sock < 0){
         perror("socket fail\n");
@@ -454,21 +492,20 @@ int SGX_CDECL main(int argc, char *argv[])
 
     // Trusted quote verification, ignore error checking
     printf("\nTrusted quote verification:\n");
-    ecdsa_quote_verification(quote, true);
+    att_ret = ecdsa_quote_verification(quote, true);
 
     printf("\n===========================================\n");
 
     // Unrusted quote verification, ignore error checking
     printf("\nUntrusted quote verification:\n");
-    ecdsa_quote_verification(quote, false);
+    att_ret = ecdsa_quote_verification(quote, false);
 
     printf("Send Migration Result to TTP Server.\n");
 
 //-----------------------------------Send Migration result to TTP Server-----------------------------//
     int ttp_sock;
 
-    //sleep(5);
-
+/*    
     struct sockaddr_in ttp_addr;
     socklen_t ttp_addr_size;
     
@@ -492,6 +529,33 @@ int SGX_CDECL main(int argc, char *argv[])
     }
 
     send(ttp_sock, message, sizeof(message), 0);
+*/
+//attserver
+    auto curl = curl_easy_init();
+    if(curl)
+    {
+	if(att_ret == 0)
+            curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8085/attres?result=success");
+	else
+            curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:8085/attres?result=success");
+
+	curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
+        //curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        //curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYPEER, 0L);
+        //curl_easy_setopt(curl, CURLOPT_USERPWD, "user:pass");
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
+        curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
+        curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunction);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
+        curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header_string);
+    }
+
+    curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+    curl = NULL;
 
     return 0;
 }
